@@ -1,0 +1,66 @@
+/* Импорт шрифтов */
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;700&display=swap');
+
+/* CSS-переменные для стилистики */
+:root {
+  --color-bg: #ffffff;
+  --color-page-bg: #f4f4f4;
+  --color-text: #000000;
+  --color-error: #E14747;
+  --font-heading: 'Anton', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-weight-body: 400;
+  --font-weight-semibold: 500;
+  --font-weight-heading: 700;
+  --radius: 4px;
+  --spacing-unit: 1rem;
+}
+
+body {
+  background: var(--color-page-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-weight: var(--font-weight-body);
+  margin: 0;
+  padding: 0;
+}
+.container {
+  max-width: 1024px;
+  margin: calc(var(--spacing-unit) * 5) auto;
+  padding: calc(var(--spacing-unit) * 2);
+  background: var(--color-bg);
+  border-radius: var(--radius);
+}
+/* Заголовки */
+h1, h2, h3, h4 {
+  font-family: var(--font-heading);
+  font-weight: var(--font-weight-heading);
+  text-transform: uppercase;
+  margin: calc(var(--spacing-unit) * 2) 0 calc(var(--spacing-unit));
+}
+label { display: block; margin-top: 10px; font-weight: 500; }
+input, textarea, select {
+  width: 100%;
+  padding: calc(var(--spacing-unit) * 1);
+  border: 1px solid var(--color-text);
+  border-radius: var(--radius);
+  font-family: var(--font-body);
+  font-weight: var(--font-weight-body);
+}
+button {
+  display: inline-block;
+  width: auto;
+  padding: var(--spacing-unit) var(--spacing-unit);
+  border: none;
+  background: var(--color-text);
+  color: var(--color-bg);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+}
+.error {
+  color: var(--color-error);
+  margin-top: var(--spacing-unit);
+}
