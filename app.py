@@ -278,7 +278,7 @@ def requests_page():
         return redirect(url_for('login'))
     db = get_db()
     reqs = db.execute(
-        "SELECT * FROM requests WHERE user_id = ? ORDER BY created_at DESC",
+        "SELECT * FROM requests WHERE user_id = ? AND status = 'pending' ORDER BY created_at DESC",
         (session['user_id'],)
     ).fetchall()
     return render_template('requests.html', requests=reqs)
