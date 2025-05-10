@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}Каталог{% endblock %}
+{% block content %}
+<h1>Каталог запчастей</h1>
+<form method="get" class="search-form">
+  <select name="type">
+    <option value="">Все категории</option>
+    {% for cat in categories %}
+    <option value="{{ cat }}" {% if selected_type==cat %}selected{% endif %}>{{ cat }}</option>
+    {% endfor %}
+  </select>
+  <input type="text"   name="make"   placeholder="Марка"  value="{{ make }}">
+  <input type="text"   name="model"  placeholder="Модель" value="{{ model }}">
+  <input type="number" name="year"   placeholder="Год"     value="{{ year }}">
+  <button type="submit">Фильтровать</button>
+</form>
+<div class="parts-list">
+  {% for part in parts %}
+  <div class="part-card">
+    {% if part['image_url'] %}
+    <img src="{{ part['image_url'] }}" alt="{{ part['name'] }}" class="part-image">
+    {% endif %}
+    <h3>{{ part['name'] }}</h3>
+    <p>Артикул: {{ part['sku'] }}</p>
+    <p>Цена: {{ part['price'] }}</p>
+    <p>Наличие: {{ part['availability']>0 and 'В наличии' or 'Нет в наличии' }}</p>
+    <a href="{{ url_for('part_detail', part_id=part['id']) }}" class="button">Подробнее</a>
+    <button class="button add-button" data-part-id="{{ part['id'] }}">Добавить в заявку</button>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

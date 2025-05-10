@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}Профиль{% endblock %}
+{% block content %}
+<h1>Профиль</h1>
+
+<form method="post" class="profile-form">
+  <label>Название сервиса</label>
+  <input type="text" name="service_name" value="{{ user['service_name'] or '' }}">
+
+  <label>Контактная информация</label>
+  <textarea name="contact_info">{{ user['contact_info'] or '' }}</textarea>
+
+  <label>Адрес</label>
+  <input type="text" name="address" value="{{ user['address'] or '' }}">
+
+  <button type="submit">Сохранить изменения</button>
+</form>
+
+<p><a href="{{ url_for('change_password') }}" class="button">Сменить пароль</a></p>
+
+<form method="post" action="{{ url_for('deactivate') }}"
+      onsubmit="return confirm('Вы уверены, что хотите деактивировать аккаунт?');">
+  <button type="submit" class="button">Деактивировать аккаунт</button>
+</form>
+{% endblock %}

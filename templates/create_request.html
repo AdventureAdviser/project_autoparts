@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}Создание заявки{% endblock %}
+{% block content %}
+<h1>Создание заявки</h1>
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
+
+<form method="post" class="request-form">
+  <div class="parts-list">
+    {% for part in parts %}
+    <div class="part-card">
+      <h3>{{ part['name'] }}</h3>
+      <p>Артикул: {{ part['sku'] }}</p>
+      <p>Цена: {{ part['price'] }}</p>
+      <p>В наличии: {{ part['availability']>0 and part['availability'] or 'Нет' }}</p>
+      <label>Количество:</label>
+      <input type="number" name="qty_{{ part['id'] }}" min="0" value="0">
+    </div>
+    {% endfor %}
+  </div>
+
+  <label>Комментарий</label>
+  <textarea name="comment" placeholder="VIN или описание проблемы"></textarea>
+
+  <div class="form-buttons">
+    <button type="submit">Отправить заявку</button>
+    <button type="reset">Очистить заявку</button>
+  </div>
+</form>
+{% endblock %}

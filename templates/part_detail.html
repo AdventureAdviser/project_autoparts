@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}{{ part['name'] }}{% endblock %}
+{% block content %}
+<h1>{{ part['name'] }}</h1>
+{% if part['image_url'] %}
+<img src="{{ part['image_url'] }}" alt="{{ part['name'] }}" class="detail-image">
+{% endif %}
+<ul>
+  <li>Артикул: {{ part['sku'] }}</li>
+  <li>Категория: {{ part['type'] }}</li>
+  <li>Марка: {{ part['make'] }}</li>
+  <li>Модель: {{ part['model'] }}</li>
+  <li>Год выпуска: {{ part['year'] }}</li>
+  <li>Цена: {{ part['price'] }}</li>
+  <li>Наличие: {{ part['availability']>0 and 'В наличии' or 'Нет в наличии' }}</li>
+</ul>
+<p>{{ part['description'] }}</p>
+<p><strong>Совместимость:</strong> {{ part['compatibility'] }}</p>
+<a href="{{ url_for('catalog') }}" class="button">Назад к каталогу</a>
+{% endblock %}

@@ -7,6 +7,16 @@
   <title>{% block title %}Autoparts{% endblock %}</title>
 </head>
 <body>
+    <!-- header с навигацией -->
+  <header>
+    <nav class="main-nav">
+      <a href="{{ url_for('home') }}">Главная</a>
+      <a href="{{ url_for('catalog') }}">Каталог</a>
+      <a href="{{ url_for('requests_page') }}">Мои заявки</a>
+      <a href="{{ url_for('orders_page') }}">История заказов</a>
+      <a href="{{ url_for('profile') }}">Профиль</a>
+    </nav>
+  </header>
   <main class="container">
     {% block content %}{% endblock %}
   </main>

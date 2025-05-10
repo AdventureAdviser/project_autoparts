@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Главная{% endblock %}
+{% block content %}
+<h1>Главная</h1>
+<form method="get" class="search-form">
+  <input type="text" name="name" placeholder="Название запчасти" value="{{ name }}">
+  <div class="filters-group">
+    <button type="submit">Поиск</button>
+    <input type="text" name="make" placeholder="Марка"   value="{{ make }}">
+    <input type="text" name="model" placeholder="Модель" value="{{ model }}">
+    <select name="type">
+      <option value="">Тип запчасти</option>
+      <option value="Фильтры"     {% if part_type=='Фильтры'     %}selected{% endif %}>Фильтры</option>
+      <option value="Тормоза"     {% if part_type=='Тормоза'     %}selected{% endif %}>Тормоза</option>
+      <option value="Двигатель"   {% if part_type=='Двигатель'   %}selected{% endif %}>Двигатель</option>
+      <option value="Трансмиссия" {% if part_type=='Трансмиссия' %}selected{% endif %}>Трансмиссия</option>
+    </select>
+  </div>
+</form>
+<div class="parts-list">
+  {% for part in parts %}
+  <div class="part-card">
+    <h3>{{ part['name'] }}</h3>
+    <p>Артикул: {{ part['sku'] }}</p>
+    <p>Цена: {{ part['price'] }}</p>
+    <p>Наличие: {{ 'В наличии' if part['availability']>0 else 'Нет в наличии' }}</p>
+    <a href="{{ url_for('part_detail', part_id=part['id']) }}" class="button">Подробнее</a>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

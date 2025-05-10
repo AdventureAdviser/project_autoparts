@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Заявка №{{ request['id'] }}{% endblock %}
+{% block content %}
+<h1>Заявка №{{ request['id'] }}</h1>
+<p>Дата: {{ request['created_at'] }}</p>
+<p>Комментарий: {{ request['comment'] }}</p>
+<p>Статус:
+  {% if request['status']=='pending' %}Ожидает обработки
+  {% elif request['status']=='confirmed' %}Подтверждена
+  {% elif request['status']=='rejected' %}Отклонена
+  {% elif request['status']=='cancelled' %}Отменена
+  {% endif %}
+</p>
+
+<h2>Позиции</h2>
+<table class="request-items">
+  <thead>
+    <tr><th>Запчасть</th><th>Артикул</th><th>Цена</th><th>Кол-во</th></tr>
+  </thead>
+  <tbody>
+    {% for item in items %}
+    <tr>
+      <td>{{ item['name'] }}</td>
+      <td>{{ item['sku'] }}</td>
+      <td>{{ item['price'] }}</td>
+      <td>{{ item['quantity'] }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<p><a href="{{ url_for('requests_page') }}" class="button">Назад к списку заявок</a></p>
+{% endblock %}

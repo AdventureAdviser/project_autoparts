@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Мои заявки{% endblock %}
+{% block content %}
+<h1>Мои заявки</h1>
+<p><a href="{{ url_for('new_request') }}" class="button">Новая заявка</a></p>
+
+<div class="requests-list">
+  {% for req in requests %}
+  <div class="request-card">
+    <p><strong>№{{ req['id'] }}</strong> — {{ req['created_at'] }}</p>
+    <p>Комментарий: {{ req['comment'] }}</p>
+    <p>Статус:
+      {% if req['status']=='pending' %}Ожидает обработки
+      {% elif req['status']=='confirmed' %}Подтверждена
+      {% elif req['status']=='rejected' %}Отклонена
+      {% elif req['status']=='cancelled' %}Отменена
+      {% endif %}
+    </p>
+    {% if request['admin_comment'] %}
+<p><strong>Комментарий администратора:</strong> {{ request['admin_comment'] }}</p>
+{% endif %}
+    <a href="{{ url_for('request_detail', request_id=req['id']) }}" class="button">Подробнее</a>
+    {% if req['status']=='pending' %}
+    <form method="post"
+          action="{{ url_for('cancel_request', request_id=req['id']) }}"
+          style="display:inline;">
+      <button type="submit" class="button cancel-button">Отменить заявку</button>
+    </form>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
