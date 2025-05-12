@@ -20,12 +20,16 @@
 <p><strong>Комментарий администратора:</strong> {{ request['admin_comment'] }}</p>
 {% endif %}
     <a href="{{ url_for('request_detail', request_id=req['id']) }}" class="button">Подробнее</a>
+    {% if req['status']=='draft' %}
+      <a href="{{ url_for('edit_request', request_id=req['id']) }}" class="button">Редактировать</a>
+      <form method="post" action="{{ url_for('send_request', request_id=req['id']) }}" style="display:inline;">
+        <button type="submit" class="button">Отправить заявку</button>
+      </form>
+    {% endif %}
     {% if req['status']=='pending' %}
-    <form method="post"
-          action="{{ url_for('cancel_request', request_id=req['id']) }}"
-          style="display:inline;">
-      <button type="submit" class="button cancel-button">Отменить заявку</button>
-    </form>
+      <form method="post" action="{{ url_for('cancel_request', request_id=req['id']) }}" style="display:inline;">
+        <button type="submit" class="button cancel-button">Отменить заявку</button>
+      </form>
     {% endif %}
   </div>
   {% endfor %}

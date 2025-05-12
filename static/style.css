@@ -248,6 +248,14 @@ header {
   gap: var(--spacing-unit);
   margin-top: var(--spacing-unit);
 }
+
+/* Фикс выравнивания и размеров кнопок в .form-buttons */
+.form-buttons {
+  align-items: center;
+}
+.form-buttons > * {
+  flex: 0 0 auto;
+}
 /* Список заявок */
 .requests-list {
   max-height: 60vh;
@@ -306,4 +314,15 @@ header {
   width: 100%;
   min-height: 80px;
   margin-bottom: var(--spacing-unit);
+}
+
+/* Исправление выравнивания кнопок в форме редактирования заявки */
+.form-buttons .button {
+  margin-top: 0;
+}
+
+/* Удаляем вертикальные отступы у кнопок формы редактирования */
+.form-buttons button,
+.form-buttons .button {
+  margin-bottom: 0;
 }

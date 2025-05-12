@@ -173,7 +173,7 @@ def login():
                 return render_template('login.html', error='Аккаунт деактивирован')
             session.clear()
             session['user_id'] = user['id']
-            return redirect(url_for('dashboard'))
+            return redirect(url_for('home'))
         return render_template('login.html', error='Неверные данные')
     return render_template('login.html')
 
@@ -201,7 +201,7 @@ def register():
 def dashboard():
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    return 'Добро пожаловать в панель подбора запчастей'
+    return redirect(url_for('home'))
 
 
 @app.route('/logout')
@@ -294,7 +294,7 @@ def requests_page():
         return redirect(url_for('login'))
     db = get_db()
     reqs = db.execute(
-        "SELECT * FROM requests WHERE user_id = ? AND status = 'pending' ORDER BY created_at DESC",
+        "SELECT * FROM requests WHERE user_id = ? AND status IN ('draft','pending') ORDER BY created_at DESC",
         (session['user_id'],)
     ).fetchall()
     return render_template('requests.html', requests=reqs)
@@ -444,8 +444,8 @@ def new_request():
             error = 'Укажите комментарий'
         if not error:
             cur = db.execute(
-                'INSERT INTO requests (user_id, comment) VALUES (?, ?)',
-                (session['user_id'], comment)
+                'INSERT INTO requests (user_id, comment, status) VALUES (?, ?, ?)',
+                (session['user_id'], comment, 'draft')
             )
             req_id = cur.lastrowid
             for part_id, q in items:
@@ -457,6 +457,80 @@ def new_request():
             return redirect(url_for('requests_page'))
 
     return render_template('create_request.html', parts=parts, error=error)
+
+
+# --- Редактирование и отправка заявки ---
+@app.route('/request/<int:request_id>/send', methods=['POST'])
+def send_request(request_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    db = get_db()
+    req = db.execute(
+        "SELECT status FROM requests WHERE id = ? AND user_id = ?",
+        (request_id, session['user_id'])
+    ).fetchone()
+    if req and req['status'] == 'draft':
+        db.execute(
+            "UPDATE requests SET status = 'pending' WHERE id = ?",
+            (request_id,)
+        )
+        db.commit()
+    return redirect(url_for('requests_page'))
+
+@app.route('/request/<int:request_id>/edit', methods=['GET', 'POST'])
+def edit_request(request_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    db = get_db()
+    req = db.execute(
+        "SELECT * FROM requests WHERE id = ? AND user_id = ?",
+        (request_id, session['user_id'])
+    ).fetchone()
+    if not req or req['status'] != 'draft':
+        return redirect(url_for('requests_page'))
+    parts = db.execute('SELECT * FROM parts').fetchall()
+    existing_items = {i['part_id']: i['quantity'] for i in db.execute(
+        "SELECT * FROM request_items WHERE request_id = ?", (request_id,)
+    ).fetchall()}
+    error = None
+    comment = req['comment']
+    if request.method == 'POST':
+        comment = request.form.get('comment', '').strip()
+        items = []
+        for part in parts:
+            qty = request.form.get(f'qty_{part["id"]}', '0')
+            try:
+                q = int(qty)
+            except ValueError:
+                q = 0
+            if q > 0:
+                items.append((part['id'], q))
+        if not items:
+            error = 'Выберите хотя бы одну запчасть и укажите количество'
+        elif not comment:
+            error = 'Укажите комментарий'
+        if not error:
+            db.execute(
+                'UPDATE requests SET comment = ? WHERE id = ?',
+                (comment, request_id)
+            )
+            db.execute(
+                'DELETE FROM request_items WHERE request_id = ?',
+                (request_id,)
+            )
+            for pid, q in items:
+                db.execute(
+                    'INSERT INTO request_items (request_id, part_id, quantity) VALUES (?, ?, ?)',
+                    (request_id, pid, q)
+                )
+            db.commit()
+            return redirect(url_for('requests_page'))
+    return render_template('edit_request.html',
+                           parts=parts,
+                           request=req,
+                           existing_items=existing_items,
+                           comment=comment,
+                           error=error)
 
 
 # --- Детали заявки и отмена заявки ---
