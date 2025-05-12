@@ -133,6 +133,22 @@ def init_db():
         db.execute("ALTER TABLE requests ADD COLUMN admin_comment TEXT")
     db.commit()
 
+    # Таблица отзывов
+    db.execute(
+        '''
+        CREATE TABLE IF NOT EXISTS reviews (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            request_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            rating INTEGER NOT NULL,
+            comment TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(request_id) REFERENCES requests(id),
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )'''
+    )
+    db.commit()
+
 with app.app_context():
     init_db()
 
@@ -314,6 +330,72 @@ def orders_page():
                            date_from=date_from,
                            date_to=date_to,
                            selected_status=status)
+
+
+# --- Отзывы ---
+@app.route('/reviews')
+def reviews():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    db = get_db()
+    rows = db.execute(
+        '''
+        SELECT r.id, r.created_at, r.comment AS req_comment, r.status,
+               rev.rating, rev.comment AS review_comment
+        FROM requests r
+        LEFT JOIN reviews rev ON r.id = rev.request_id AND rev.user_id = ?
+        WHERE r.user_id = ? AND r.status != 'pending'
+        ORDER BY r.created_at DESC
+        ''',
+        (session['user_id'], session['user_id'])
+    ).fetchall()
+    return render_template('reviews.html', requests=rows)
+
+
+@app.route('/review/<int:request_id>', methods=['GET', 'POST'])
+def leave_review(request_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    db = get_db()
+    req = db.execute(
+        "SELECT * FROM requests WHERE id = ? AND user_id = ? AND status != 'pending'",
+        (request_id, session['user_id'])
+    ).fetchone()
+    if not req:
+        return "Заявка не найдена или ещё не завершена", 404
+    existing = db.execute(
+        "SELECT * FROM reviews WHERE request_id = ? AND user_id = ?",
+        (request_id, session['user_id'])
+    ).fetchone()
+    error   = None
+    comment = existing['comment'] if existing else ''
+    rating  = existing['rating']  if existing else ''
+    if request.method == 'POST':
+        rating = request.form.get('rating', '')
+        comment = request.form.get('comment', '').strip()
+        if not rating:
+            error = 'Выберите рейтинг'
+        elif not comment:
+            error = 'Введите комментарий'
+        else:
+            if existing:
+                db.execute(
+                    'UPDATE reviews SET rating = ?, comment = ? WHERE id = ?',
+                    (rating, comment, existing['id'])
+                )
+            else:
+                db.execute(
+                    'INSERT INTO reviews (request_id, user_id, rating, comment)'
+                    ' VALUES (?, ?, ?, ?)',
+                    (request_id, session['user_id'], rating, comment)
+                )
+            db.commit()
+            return redirect(url_for('reviews'))
+    return render_template('review_form.html',
+                           request_id=request_id,
+                           comment=comment,
+                           rating=rating,
+                           error=error)
 
 
 @app.route('/profile', methods=['GET', 'POST'])

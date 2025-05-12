@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}Отзывы{% endblock %}
+{% block content %}
+<h1>Отзывы</h1>
+<div class="reviews-list">
+  {% for r in requests %}
+  <div class="review-card">
+    <p><strong>Заявка №{{ r.id }}</strong> — {{ r.created_at }}</p>
+    <p>Комментарий заявки: {{ r.req_comment }}</p>
+    <p>Статус: {{ r.status }}</p>
+    {% if r.rating %}
+      <p>Ваш рейтинг: {{ r.rating }} ★</p>
+      <p>Ваш отзыв: {{ r.review_comment }}</p>
+    {% else %}
+      <a href="{{ url_for('leave_review', request_id=r.id) }}" class="button">Оставить отзыв</a>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

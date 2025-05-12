@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}Оставить отзыв{% endblock %}
+{% block content %}
+<h1>Оставить отзыв для заявки №{{ request_id }}</h1>
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
+<form method="post" class="review-form">
+  <label>Рейтинг</label>
+  <select name="rating" required>
+    <option value="">--Выберите--</option>
+    {% for i in range(1,6) %}
+    <option value="{{ i }}" {% if rating|int == i %}selected{% endif %}>{{ i }} ★</option>
+    {% endfor %}
+  </select>
+  <label>Комментарий</label>
+  <textarea name="comment" required>{{ comment }}</textarea>
+  <div class="form-buttons">
+    <button type="submit">Сохранить</button>
+    <button type="button" onclick="window.location.href='{{ url_for('reviews') }}'">Отменить</button>
+  </div>
+</form>
+{% endblock %}
