@@ -2,6 +2,7 @@
 {% block title %}Управление товарами{% endblock %}
 {% block content %}
 <h1>Управление товарами</h1>
+<p><a href="{{ url_for('admin_part_new') }}" class="button">Добавить товар</a></p>
 <table class="request-items">
   <thead>
     <tr>
@@ -10,15 +11,21 @@
   </thead>
   <tbody>
     {% for part in parts %}
-    <tr>
-      <td>{{ part['id'] }}</td>
-      <td>{{ part['name'] }}</td>
-      <td>{{ part['sku'] }}</td>
-      <td>
-        <a href="{{ url_for('admin_part_edit', part_id=part['id']) }}" class="button">Редактировать</a>
-      </td>
-    </tr>
-    {% endfor %}
+<tr>
+  <td>{{ part['id'] }}</td>
+  <td>{{ part['name'] }}</td>
+  <td>{{ part['sku'] }}</td>
+  <td>
+    <a href="{{ url_for('admin_part_edit', part_id=part['id']) }}" class="button">Редактировать</a>
+    <form method="post"
+          action="{{ url_for('admin_part_delete', part_id=part['id']) }}"
+          style="display:inline;"
+          onsubmit="return confirm('Удалить товар?');">
+      <button type="submit" class="button cancel-button">Удалить</button>
+    </form>
+  </td>
+</tr>
+{% endfor %}
   </tbody>
 </table>
 {% endblock %}

@@ -808,7 +808,61 @@ def admin_part_edit(part_id):
     if not part:
         return "Товар не найден", 404
     return render_template('admin_part_edit.html', part=part)
+@app.route('/admin/part/new', methods=['GET', 'POST'])
+def admin_part_new():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    db = get_db()
+    user = db.execute('SELECT is_admin FROM users WHERE id = ?', (session['user_id'],)).fetchone()
+    if not user or user['is_admin'] != 1:
+        return "Доступ запрещён", 403
+    if request.method == 'POST':
+        # Сбор данных из формы
+        name = request.form['name']
+        sku = request.form['sku']
+        price = request.form['price']
+        availability = request.form['availability']
+        make = request.form['make']
+        model = request.form['model']
+        part_type = request.form['type']
+        year = request.form['year'] or None
+        description = request.form['description']
+        compatibility = request.form['compatibility']
+        # Обработка изображения (как в редактировании)
+        image_file = request.files.get('image_file')
+        if image_file and image_file.filename:
+            filename = secure_filename(image_file.filename)
+            upload_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            image_file.save(upload_path)
+            image_url = '/static/images/' + filename
+        else:
+            image_url = ''
+        # Сохранение новой запчасти
+        db.execute(
+            '''
+            INSERT INTO parts
+                (name, sku, price, availability, make, model, type, year, description, compatibility, image_url)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''',
+            (name, sku, price, availability, make, model, part_type,
+             year, description, compatibility, image_url)
+        )
+        db.commit()
+        return redirect(url_for('admin_parts'))
+    # GET: используем тот же шаблон, но без данных part
+    return render_template('admin_part_edit.html', part={})
 
+@app.route('/admin/part/<int:part_id>/delete', methods=['POST'])
+def admin_part_delete(part_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    db = get_db()
+    user = db.execute('SELECT is_admin FROM users WHERE id = ?', (session['user_id'],)).fetchone()
+    if not user or user['is_admin'] != 1:
+        return "Доступ запрещён", 403
+    db.execute('DELETE FROM parts WHERE id = ?', (part_id,))
+    db.commit()
+    return redirect(url_for('admin_parts'))
 @app.route('/cart/remove/<int:part_id>')
 def remove_from_cart(part_id):
     if 'user_id' not in session:
