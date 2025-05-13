@@ -16,5 +16,5 @@
 </ul>
 <p>{{ part['description'] }}</p>
 <p><strong>Совместимость:</strong> {{ part['compatibility'] }}</p>
-<a href="{{ url_for('catalog') }}" class="button">Назад к каталогу</a>
+  <a href="{{ url_for(next_page) }}" class="button">Назад к списку</a>
 {% endblock %}

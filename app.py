@@ -252,8 +252,9 @@ def part_detail(part_id):
     part = db.execute('SELECT * FROM parts WHERE id = ?', (part_id,)).fetchone()
     if not part:
         return 'Запчасть не найдена', 404
-    return render_template('part_detail.html', part=part)
-
+    # Определяем, откуда пришёл пользователь
+    next_page = request.args.get('next', 'home')
+    return render_template('part_detail.html', part=part, next_page=next_page)
 
 # --- Прочие заглушки ---
 @app.route('/home')

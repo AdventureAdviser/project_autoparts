@@ -24,7 +24,7 @@
     <p>Артикул: {{ part['sku'] }}</p>
     <p>Цена: {{ part['price'] }}</p>
     <p>Наличие: {{ part['availability']>0 and 'В наличии' or 'Нет в наличии' }}</p>
-    <a href="{{ url_for('part_detail', part_id=part['id']) }}" class="button">Подробнее</a>
+    <a href="{{ url_for('part_detail', part_id=part['id'], next='catalog') }}" class="button">Подробнее</a>
     <button class="button add-button" data-part-id="{{ part['id'] }}">Добавить в заявку</button>
   </div>
   {% endfor %}
