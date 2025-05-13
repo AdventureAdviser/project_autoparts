@@ -2,6 +2,7 @@
 {% block title %}Панель администратора{% endblock %}
 {% block content %}
 <h1>Панель администратора</h1>
+<p><a href="{{ url_for('admin_parts') }}" class="button">Управление товарами</a></p>
 <div class="requests-list">
   {% for r in requests %}
   <div class="request-card">

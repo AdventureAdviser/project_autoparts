@@ -730,6 +730,58 @@ def admin_request_detail(request_id):
     ).fetchall()
     return render_template('admin_request_detail.html', request=req, items=items)
 
+
+# --- Управление товарами (админ) ---
+
+@app.route('/admin/parts')
+def admin_parts():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    db = get_db()
+    user = db.execute('SELECT is_admin FROM users WHERE id = ?', (session['user_id'],)).fetchone()
+    if not user or user['is_admin'] != 1:
+        return "Доступ запрещён", 403
+    parts = db.execute('SELECT * FROM parts ORDER BY id').fetchall()
+    return render_template('admin_parts.html', parts=parts)
+
+@app.route('/admin/part/<int:part_id>/edit', methods=['GET', 'POST'])
+def admin_part_edit(part_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    db = get_db()
+    user = db.execute('SELECT is_admin FROM users WHERE id = ?', (session['user_id'],)).fetchone()
+    if not user or user['is_admin'] != 1:
+        return "Доступ запрещён", 403
+    if request.method == 'POST':
+        name = request.form['name']
+        sku = request.form['sku']
+        price = request.form['price']
+        availability = request.form['availability']
+        make = request.form['make']
+        model = request.form['model']
+        part_type = request.form['type']
+        year = request.form['year'] or None
+        description = request.form['description']
+        compatibility = request.form['compatibility']
+        image_url = request.form['image_url']
+        db.execute(
+            '''
+            UPDATE parts SET
+                name=?, sku=?, price=?, availability=?,
+                make=?, model=?, type=?, year=?,
+                description=?, compatibility=?, image_url=?
+            WHERE id=?
+            ''',
+            (name, sku, price, availability, make, model, part_type,
+             year, description, compatibility, image_url, part_id)
+        )
+        db.commit()
+        return redirect(url_for('admin_parts'))
+    part = db.execute('SELECT * FROM parts WHERE id = ?', (part_id,)).fetchone()
+    if not part:
+        return "Товар не найден", 404
+    return render_template('admin_part_edit.html', part=part)
+
 @app.route('/cart/remove/<int:part_id>')
 def remove_from_cart(part_id):
     if 'user_id' not in session:

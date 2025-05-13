@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}Управление товарами{% endblock %}
+{% block content %}
+<h1>Управление товарами</h1>
+<table class="request-items">
+  <thead>
+    <tr>
+      <th>ID</th><th>Название</th><th>Артикул</th><th>Действия</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for part in parts %}
+    <tr>
+      <td>{{ part['id'] }}</td>
+      <td>{{ part['name'] }}</td>
+      <td>{{ part['sku'] }}</td>
+      <td>
+        <a href="{{ url_for('admin_part_edit', part_id=part['id']) }}" class="button">Редактировать</a>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
