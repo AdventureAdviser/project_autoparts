@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}Панель администратора{% endblock %}
+{% block content %}
+<h1>Панель администратора</h1>
+<div class="requests-list">
+  {% for r in requests %}
+  <div class="request-card">
+    <p><strong>№{{ r.id }}</strong> — {{ r.username }} — {{ r.created_at }}</p>
+    <p>Комментарий: {{ r.comment }}</p>
+    <p>Статус: {{ r.status }}</p>
+    <a href="{{ url_for('admin_request_detail', request_id=r.id) }}" class="button">Открыть</a>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

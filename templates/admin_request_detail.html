@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Заявка №{{ request.id }}{% endblock %}
+{% block content %}
+<h1>Заявка №{{ request.id }} от {{ request.created_at }}</h1>
+<p>Пользователь: {{ request.username }}</p>
+<p>Комментарий заявки: {{ request.comment }}</p>
+
+<h2>Позиции</h2>
+<table class="request-items">
+  <thead><tr><th>Запчасть</th><th>Артикул</th><th>Цена</th><th>Кол-во</th></tr></thead>
+  <tbody>
+    {% for item in items %}
+    <tr>
+      <td>{{ item.name }}</td>
+      <td>{{ item.sku }}</td>
+      <td>{{ item.price }}</td>
+      <td>{{ item.quantity }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<form method="post" class="profile-form">
+  <label>Статус</label>
+  <select name="status">
+    <option value="pending"   {% if request.status=='pending'  %}selected{% endif %}>Ожидает обработки</option>
+    <option value="confirmed" {% if request.status=='confirmed'%}selected{% endif %}>Подтверждена</option>
+    <option value="rejected"  {% if request.status=='rejected' %}selected{% endif %}>Отклонена</option>
+    <option value="cancelled" {% if request.status=='cancelled'%}selected{% endif %}>Отменена</option>
+  </select>
+
+  <label>Комментарий администратора</label>
+  <textarea name="admin_comment">{{ request.admin_comment or '' }}</textarea>
+
+  <button type="submit">Сохранить</button>
+  <a href="{{ url_for('admin_panel') }}" class="button">Назад</a>
+</form>
+{% endblock %}

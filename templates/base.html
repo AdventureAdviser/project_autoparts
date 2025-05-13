@@ -15,6 +15,9 @@
       <a href="{{ url_for('requests_page') }}">Мои заявки</a>
       <a href="{{ url_for('orders_page') }}">История заказов</a>
       <a href="{{ url_for('profile') }}">Профиль</a>
+      {% if session['is_admin'] %}
+      <a href="{{ url_for('admin_panel') }}">Админ-панель</a>
+      {% endif %}
     </nav>
   </header>
   <main class="container">

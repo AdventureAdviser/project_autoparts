@@ -35,14 +35,6 @@ def init_db():
         )'''
     )
     db.commit()
-    # Добавить статус заявки (если ещё нет)
-    cur = db.execute("PRAGMA table_info(requests)").fetchall()
-    cols = [c['name'] for c in cur]
-    if 'status' not in cols:
-        db.execute(
-            "ALTER TABLE requests ADD COLUMN status TEXT NOT NULL DEFAULT 'pending'"
-        )
-        db.commit()
     # Расширение таблицы пользователей дополнительными полями
     cur = db.execute("PRAGMA table_info(users)").fetchall()
     user_cols = [c['name'] for c in cur]
@@ -55,6 +47,17 @@ def init_db():
     if 'is_active' not in user_cols:
         db.execute("ALTER TABLE users ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1")
     db.commit()
+    if 'is_admin' not in user_cols:
+        db.execute("ALTER TABLE users ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0")
+    db.commit()
+    # Создать пользователя-администратора по умолчанию, если таблица пуста
+    cur = db.execute("SELECT COUNT(*) AS cnt FROM users").fetchone()
+    if cur['cnt'] == 0:
+        db.execute(
+            'INSERT INTO users (username, email, password, is_admin, is_active) VALUES (?, ?, ?, ?, ?)',
+            ('admin', 'admin@example.com', generate_password_hash('adminpass'), 1, 1)
+        )
+        db.commit()
     # Таблица автозапчастей (с новыми полями)
     db.execute(
         '''
@@ -173,6 +176,7 @@ def login():
                 return render_template('login.html', error='Аккаунт деактивирован')
             session.clear()
             session['user_id'] = user['id']
+            session['is_admin'] = user['is_admin']
             return redirect(url_for('home'))
         return render_template('login.html', error='Неверные данные')
     return render_template('login.html')
@@ -661,6 +665,61 @@ def add_to_cart(part_id):
         session['cart'] = cart
     next_page = request.args.get('next', 'home')
     return redirect(url_for(next_page))
+
+
+# --- Админ-панель ---
+@app.route('/admin')
+def admin_panel():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    db = get_db()
+    user = db.execute('SELECT is_admin FROM users WHERE id = ?', (session['user_id'],)).fetchone()
+    if not user or user['is_admin'] != 1:
+        return "Доступ запрещён", 403
+    rows = db.execute(
+        '''
+        SELECT r.id, u.username, r.comment, r.created_at, r.status
+        FROM requests r
+        JOIN users u ON r.user_id = u.id
+        ORDER BY r.created_at DESC
+        '''
+    ).fetchall()
+    return render_template('admin_panel.html', requests=rows)
+
+@app.route('/admin/request/<int:request_id>', methods=['GET', 'POST'])
+def admin_request_detail(request_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    db = get_db()
+    user = db.execute('SELECT is_admin FROM users WHERE id = ?', (session['user_id'],)).fetchone()
+    if not user or user['is_admin'] != 1:
+        return "Доступ запрещён", 403
+    if request.method == 'POST':
+        status = request.form['status']
+        admin_comment = request.form.get('admin_comment', '').strip()
+        db.execute(
+            'UPDATE requests SET status = ?, admin_comment = ? WHERE id = ?',
+            (status, admin_comment, request_id)
+        )
+        db.commit()
+        return redirect(url_for('admin_panel'))
+    req = db.execute(
+        '''
+        SELECT r.*, u.username
+        FROM requests r
+        JOIN users u ON r.user_id = u.id
+        WHERE r.id = ?
+        ''', (request_id,)
+    ).fetchone()
+    items = db.execute(
+        '''
+        SELECT ri.quantity, p.name, p.sku, p.price
+        FROM request_items ri
+        JOIN parts p ON ri.part_id = p.id
+        WHERE ri.request_id = ?
+        ''', (request_id,)
+    ).fetchall()
+    return render_template('admin_request_detail.html', request=req, items=items)
 
 @app.route('/cart/remove/<int:part_id>')
 def remove_from_cart(part_id):
