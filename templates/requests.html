@@ -31,6 +31,9 @@
         <button type="submit" class="button cancel-button">Отменить заявку</button>
       </form>
     {% endif %}
+    {% if req['status']=='confirmed' %}
+      <a href="{{ url_for('leave_review', request_id=req['id']) }}" class="button">Оставить отзыв</a>
+    {% endif %}
   </div>
   {% endfor %}
 </div>
