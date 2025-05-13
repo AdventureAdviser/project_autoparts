@@ -6,6 +6,12 @@ from config import Config
 app = Flask(__name__)
 app.config.from_object(Config)
 
+import os
+from werkzeug.utils import secure_filename
+
+# Настройка папки для сохранения изображений
+UPLOAD_FOLDER = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'static', 'images')
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # --- Работа с БД ---
 def get_db():
@@ -745,6 +751,7 @@ def admin_parts():
     return render_template('admin_parts.html', parts=parts)
 
 @app.route('/admin/part/<int:part_id>/edit', methods=['GET', 'POST'])
+@app.route('/admin/part/<int:part_id>/edit', methods=['GET', 'POST'])
 def admin_part_edit(part_id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
@@ -752,18 +759,36 @@ def admin_part_edit(part_id):
     user = db.execute('SELECT is_admin FROM users WHERE id = ?', (session['user_id'],)).fetchone()
     if not user or user['is_admin'] != 1:
         return "Доступ запрещён", 403
+
     if request.method == 'POST':
-        name = request.form['name']
-        sku = request.form['sku']
-        price = request.form['price']
+        # Получаем текущий товар, чтобы использовать его image_url, если файл не загружен
+        part = db.execute('SELECT * FROM parts WHERE id = ?', (part_id,)).fetchone()
+        if not part:
+            return "Товар не найден", 404
+
+        name         = request.form['name']
+        sku          = request.form['sku']
+        price        = request.form['price']
         availability = request.form['availability']
-        make = request.form['make']
-        model = request.form['model']
-        part_type = request.form['type']
-        year = request.form['year'] or None
-        description = request.form['description']
-        compatibility = request.form['compatibility']
-        image_url = request.form['image_url']
+        make         = request.form['make']
+        model        = request.form['model']
+        part_type    = request.form['type']
+        year         = request.form['year'] or None
+        description  = request.form['description']
+        compatibility= request.form['compatibility']
+
+        # Обработка загруженного изображения
+        image_file = request.files.get('image_file')
+        if image_file and image_file.filename:
+            filename    = secure_filename(image_file.filename)
+            upload_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            image_file.save(upload_path)
+            image_url   = '/static/images/' + filename
+        else:
+            # если нового файла нет — сохраняем прежний URL
+            image_url = part['image_url']
+
+        # Обновляем запись в БД
         db.execute(
             '''
             UPDATE parts SET
@@ -777,6 +802,8 @@ def admin_part_edit(part_id):
         )
         db.commit()
         return redirect(url_for('admin_parts'))
+
+    # GET: подгружаем part для формы
     part = db.execute('SELECT * FROM parts WHERE id = ?', (part_id,)).fetchone()
     if not part:
         return "Товар не найден", 404

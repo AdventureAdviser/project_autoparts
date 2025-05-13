@@ -2,7 +2,7 @@
 {% block title %}Редактировать товар №{{ part['id'] }}{% endblock %}
 {% block content %}
 <h1>Редактировать товар №{{ part['id'] }}</h1>
-<form method="post" class="profile-form">
+<form method="post" enctype="multipart/form-data" class="profile-form">
   <label>Название</label>
   <input type="text" name="name" value="{{ part['name'] }}" required>
 
@@ -35,6 +35,12 @@
 
   <label>URL изображения</label>
   <input type="text" name="image_url" value="{{ part['image_url'] or '' }}">
+<label>Изображение товара</label>
+{% if part['image_url'] %}
+<img src="{{ part['image_url'] }}" alt="Текущее изображение"
+     style="max-width:200px; display:block; margin-bottom:1rem;">
+{% endif %}
+<input type="file" name="image_file">
 
   <div class="form-buttons">
     <button type="submit">Сохранить</button>
