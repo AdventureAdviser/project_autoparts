@@ -16,6 +16,7 @@
 </form>
 <div class="parts-list">
   {% for part in parts %}
+  {% set in_draft = part['id'] in draft_items %}
   <div class="part-card">
     {% if part['image_url'] %}
     <img src="{{ part['image_url'] }}" alt="{{ part['name'] }}" class="part-image">
@@ -25,7 +26,11 @@
     <p>Цена: {{ part['price'] }}</p>
     <p>Наличие: {{ part['availability']>0 and 'В наличии' or 'Нет в наличии' }}</p>
     <a href="{{ url_for('part_detail', part_id=part['id'], next='catalog') }}" class="button">Подробнее</a>
-    <button class="button add-button" data-part-id="{{ part['id'] }}">Добавить в заявку</button>
+    {% if in_draft %}
+    <a href="{{ url_for('draft_remove', part_id=part['id'], next='catalog') }}" class="button">Удалить</a>
+    {% else %}
+    <a href="{{ url_for('draft_add', part_id=part['id'], next='catalog') }}" class="button add-button">Добавить в заявку</a>
+    {% endif %}
   </div>
   {% endfor %}
 </div>

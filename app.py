@@ -234,13 +234,27 @@ def catalog():
     parts = db.execute(query, params).fetchall()
     # Список всех категорий
     cats = [r['type'] for r in db.execute("SELECT DISTINCT type FROM parts").fetchall()]
+    cart = session.get('cart', [])
+    # Получить список позиций текущего черновика
+    row = db.execute(
+        "SELECT id FROM requests WHERE user_id = ? AND status = 'draft' ORDER BY created_at DESC LIMIT 1",
+        (session['user_id'],)
+    ).fetchone()
+    draft_items = []
+    if row:
+        draft_items = [r['part_id'] for r in db.execute(
+            "SELECT part_id FROM request_items WHERE request_id = ?",
+            (row['id'],)
+        ).fetchall()]
     return render_template('catalog.html',
                            parts=parts,
                            categories=cats,
                            selected_type=category,
                            make=make,
                            model=model,
-                           year=year)
+                           year=year,
+                           cart=cart,
+                           draft_items=draft_items)
 
 
 # --- Страница деталей запчасти ---
@@ -281,12 +295,26 @@ def home():
         query  += " AND type = ?"
         params.append(part_type)
     parts = db.execute(query, params).fetchall()
+    cart = session.get('cart', [])
+    # Получить список позиций текущего черновика
+    row = db.execute(
+        "SELECT id FROM requests WHERE user_id = ? AND status = 'draft' ORDER BY created_at DESC LIMIT 1",
+        (session['user_id'],)
+    ).fetchone()
+    draft_items = []
+    if row:
+        draft_items = [r['part_id'] for r in db.execute(
+            "SELECT part_id FROM request_items WHERE request_id = ?",
+            (row['id'],)
+        ).fetchall()]
     return render_template('home.html',
                            parts=parts,
                            name=name,
                            make=make,
                            model=model,
-                           part_type=part_type)
+                           part_type=part_type,
+                           cart=cart,
+                           draft_items=draft_items)
 
 
 @app.route('/requests')
@@ -424,7 +452,11 @@ def new_request():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     db = get_db()
-    parts = db.execute('SELECT * FROM parts').fetchall()
+    cart = session.get('cart', [])
+    parts = []
+    if cart:
+        placeholders = ','.join('?' for _ in cart)
+        parts = db.execute(f'SELECT * FROM parts WHERE id IN ({placeholders})', tuple(cart)).fetchall()
     error = None
 
     if request.method == 'POST':
@@ -455,6 +487,7 @@ def new_request():
                     (req_id, part_id, q)
                 )
             db.commit()
+            session['cart'] = []
             return redirect(url_for('requests_page'))
 
     return render_template('create_request.html', parts=parts, error=error)
@@ -489,10 +522,16 @@ def edit_request(request_id):
     ).fetchone()
     if not req or req['status'] != 'draft':
         return redirect(url_for('requests_page'))
-    parts = db.execute('SELECT * FROM parts').fetchall()
     existing_items = {i['part_id']: i['quantity'] for i in db.execute(
         "SELECT * FROM request_items WHERE request_id = ?", (request_id,)
     ).fetchall()}
+    placeholders = ','.join('?' for _ in existing_items)
+    parts = []
+    if existing_items:
+        parts = db.execute(
+            f"SELECT * FROM parts WHERE id IN ({placeholders})",
+            tuple(existing_items.keys())
+        ).fetchall()
     error = None
     comment = req['comment']
     if request.method == 'POST':
@@ -608,6 +647,85 @@ def deactivate():
     db.commit()
     session.clear()
     return redirect(url_for('login'))
+
+# --- Управление корзиной ---
+
+# --- Управление корзиной ---
+@app.route('/cart/add/<int:part_id>')
+def add_to_cart(part_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    cart = session.get('cart', [])
+    if part_id not in cart:
+        cart.append(part_id)
+        session['cart'] = cart
+    next_page = request.args.get('next', 'home')
+    return redirect(url_for(next_page))
+
+@app.route('/cart/remove/<int:part_id>')
+def remove_from_cart(part_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    cart = session.get('cart', [])
+    if part_id in cart:
+        cart.remove(part_id)
+        session['cart'] = cart
+    next_page = request.args.get('next', 'home')
+    return redirect(url_for(next_page))
+
+# --- Управление черновиком заявки ---
+@app.route('/draft/add/<int:part_id>')
+def draft_add(part_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    db = get_db()
+    user_id = session['user_id']
+    # Найти или создать черновик
+    row = db.execute(
+        "SELECT id FROM requests WHERE user_id = ? AND status = 'draft' ORDER BY created_at DESC LIMIT 1",
+        (user_id,)
+    ).fetchone()
+    if row:
+        draft_id = row['id']
+    else:
+        cur = db.execute(
+            "INSERT INTO requests (user_id, comment, status) VALUES (?, ?, 'draft')",
+            (user_id, '',)
+        )
+        draft_id = cur.lastrowid
+    # Добавить позицию, если её нет
+    exists = db.execute(
+        "SELECT 1 FROM request_items WHERE request_id = ? AND part_id = ?",
+        (draft_id, part_id)
+    ).fetchone()
+    if not exists:
+        db.execute(
+            "INSERT INTO request_items (request_id, part_id, quantity) VALUES (?, ?, ?)",
+            (draft_id, part_id, 1)
+        )
+        db.commit()
+    next_page = request.args.get('next', 'home')
+    return redirect(url_for(next_page))
+
+@app.route('/draft/remove/<int:part_id>')
+def draft_remove(part_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    db = get_db()
+    user_id = session['user_id']
+    row = db.execute(
+        "SELECT id FROM requests WHERE user_id = ? AND status = 'draft' ORDER BY created_at DESC LIMIT 1",
+        (user_id,)
+    ).fetchone()
+    if row:
+        draft_id = row['id']
+        db.execute(
+            "DELETE FROM request_items WHERE request_id = ? AND part_id = ?",
+            (draft_id, part_id)
+        )
+        db.commit()
+    next_page = request.args.get('next', 'home')
+    return redirect(url_for(next_page))
 
 if __name__ == '__main__':
     app.run(debug=True)
