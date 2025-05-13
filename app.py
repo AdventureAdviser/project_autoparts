@@ -351,19 +351,28 @@ def orders_page():
     if date_to:
         query += " AND date(created_at) <= ?"; params.append(date_to)
     query += " ORDER BY created_at DESC"
-    orders = db.execute(query, params).fetchall()
-    # Список статусов для фильтра
+    # Подтягиваем информацию о уже оставленных отзывах
+    rows = db.execute(
+        '''
+        SELECT r.*, rev.id AS review_id
+        FROM requests r
+        LEFT JOIN reviews rev
+          ON r.id = rev.request_id AND rev.user_id = ?
+        WHERE r.user_id = ? AND r.status != 'pending'
+        ORDER BY r.created_at DESC
+        ''',
+        (session['user_id'], session['user_id'])
+    ).fetchall()
     status_list = [r['status'] for r in db.execute(
         "SELECT DISTINCT status FROM requests WHERE user_id = ? AND status != 'pending'",
         (session['user_id'],)
     ).fetchall()]
     return render_template('requests.html',
-                           requests=orders,
+                           requests=rows,
                            status_list=status_list,
                            date_from=date_from,
                            date_to=date_to,
                            selected_status=status)
-
 
 # --- Отзывы ---
 @app.route('/reviews')
